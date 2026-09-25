@@ -9,4 +9,4 @@ $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
 
 Write-Host "JAVA_HOME = $env:JAVA_HOME"
 java -version
-mvn -version
+.\mvnw.cmd -version
