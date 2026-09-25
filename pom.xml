@@ -224,7 +224,13 @@
                   <version>[17,)</version>
                 </requireJavaVersion>
                 <banDuplicatePomDependencyVersions/>
-                <banDynamicVersions/>
+				<banDynamicVersions>
+				  <!--
+					Allow SNAPSHOT versions for our own modules during development.
+					Version ranges like [1.0,) and LATEST/RELEASE keywords remain banned.
+				  -->
+				  <allowSnapshots>true</allowSnapshots>
+				</banDynamicVersions>
               </rules>
               <fail>true</fail>
             </configuration>
