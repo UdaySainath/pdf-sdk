@@ -56,3 +56,6 @@ replay_pid*
 
 # Test artifacts
 *.hprof
+
+# Personal JDK setup (see set-env.example.ps1)
+set-env.ps1
