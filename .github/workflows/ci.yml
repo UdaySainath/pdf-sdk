@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }} / JDK ${{ matrix.java }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            java: '17'
+          - os: ubuntu-latest
+            java: '21'
+          - os: windows-latest
+            java: '17'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+
+      - name: Set SOURCE_DATE_EPOCH for reproducible builds
+        shell: bash
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)" >> "$GITHUB_ENV"
+
+      - name: Build and verify
+        shell: bash
+        run: sh mvnw -B -ntp clean verify
+
+      - name: Enforce no production deps in pdf-sdk-api
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUTPUT=$(sh mvnw -B -ntp -q -pl pdf-sdk-api dependency:list -DincludeScope=compile -DoutputFile=-)
+          echo "$OUTPUT"
+          if echo "$OUTPUT" | grep -E '^\[INFO\]\s+[a-zA-Z]' | grep -v 'com.xtg.xtdocs:pdf-sdk-api'; then
+            echo "::error::pdf-sdk-api must have zero production dependencies"
+            exit 1
+          fi
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-${{ matrix.os }}-${{ matrix.java }}
+          path: '**/target/surefire-reports/**'
+          if-no-files-found: ignore
